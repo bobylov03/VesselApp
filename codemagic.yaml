@@ -11,7 +11,8 @@ workflows:
     scripts:
       - name: Install dependencies
         script: |
-          npm install
+          npm ci
+          chmod +x ./node_modules/.bin/cap || true
           npx cap sync ios
       - name: Build iOS app
         script: |
@@ -30,4 +31,4 @@ workflows:
     publishing:
       email:
         recipients:
-          - bobylov03@gmail.com
+          - bobylevvlad0310@icloud.com
