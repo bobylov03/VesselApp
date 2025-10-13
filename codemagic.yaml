@@ -21,14 +21,14 @@ workflows:
           echo "🔄 Syncing iOS platform..."
           npx cap sync ios
           echo "📁 Installing CocoaPods dependencies..."
-          cd ios
+          cd ios/App
           pod install
-          cd ..
+          cd ../..
 
       - name: Build iOS app
         script: |
           echo "🚀 Building iOS release..."
-          cd ios
+          cd ios/App
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -37,10 +37,11 @@ workflows:
                      CODE_SIGN_IDENTITY="" \
                      CODE_SIGNING_REQUIRED=NO \
                      CODE_SIGNING_ALLOWED=NO
+          cd ../..
 
     artifacts:
-      - ios/build/**/*.ipa
-      - ios/build/**/*.app
+      - ios/App/build/**/*.ipa
+      - ios/App/build/**/*.app
 
     publishing:
       email:
