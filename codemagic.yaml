@@ -12,10 +12,7 @@ workflows:
         APP_STORE_CONNECT_ISSUER_ID: Environ("APP_STORE_CONNECT_ISSUER_ID")
         APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
-
-    code_signing:
-      xcode:
-        use_auto_signing: true
+        DEVELOPMENT_TEAM: "AJ5RPURRUV"  # ← твой Team ID
 
     scripts:
       - name: Install dependencies
@@ -47,6 +44,7 @@ workflows:
                      -sdk iphoneos \
                      -configuration Release \
                      -archivePath ../build/App.xcarchive \
+                     DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      clean archive || exit 1
 
           echo "📦 Exporting .ipa..."
