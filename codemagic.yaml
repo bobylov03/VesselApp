@@ -25,14 +25,13 @@ workflows:
           cd ios/App && pod install && cd ../..
           echo "✅ Dependencies installed"
 
-      - name: Fetch signing files from App Store Connect
+      - name: Fetch signing files
         script: |
           echo "🔑 Fetching provisioning profiles and certificates..."
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
-            --create \
-            --verbose
-          echo "✅ Signing files fetched successfully"
+            --create --verbose
+          echo "✅ Signing files fetched"
 
       - name: Install signing assets
         script: |
@@ -40,32 +39,24 @@ workflows:
           keychain initialize
           keychain add-certificates
           profiles install
-          echo "✅ Certificates and profiles installed"
+          echo "✅ Installed certificates and profiles"
 
-      - name: Debug installed provisioning profiles
-        script: |
-          echo "🔍 Listing installed profiles..."
-          ls -1 ~/Library/MobileDevice/Provisioning\ Profiles || true
-          grep -A3 "<key>Name</key>" ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
-
-      - name: Bind provisioning profile to App target
+      - name: Bind provisioning profile only to App target
         script: |
           echo "📘 Binding provisioning profile to App target..."
+          # Только App, Pods остаются Automatic
           xcode-project use-profiles \
             --project "ios/App/App.xcodeproj" \
             --target "App" \
             --bundle-id "$BUNDLE_ID" \
             --export-method "app-store"
-          echo "✅ Bound provisioning profile to App target"
+          echo "✅ Bound only to App target (Pods unchanged)."
 
       - name: Build (archive)
         script: |
           echo "🚀 Archiving app..."
           cd ios/App
           rm -rf ~/Library/Developer/Xcode/DerivedData
-
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -n 1)
-          echo "📄 Using provisioning profile: $PROFILE_PATH"
 
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
@@ -74,19 +65,17 @@ workflows:
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
-                     PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
                      CODE_SIGN_STYLE=Manual \
                      CODE_SIGN_IDENTITY="Apple Distribution" \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
           cd ../..
-          echo "✅ Archive completed successfully"
+          echo "✅ Archive completed"
 
-      - name: Export .ipa (App Store)
+      - name: Export .ipa
         script: |
           echo "📦 Exporting .ipa..."
           cd ios/App
-
           cat > ExportOptions.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -98,8 +87,8 @@ workflows:
             <dict>
               <key>vesseldatabase.app</key><string>VesselApp_Distribution</string>
             </dict>
-            <key>uploadBitcode</key><false/>
             <key>uploadSymbols</key><true/>
+            <key>uploadBitcode</key><false/>
           </dict>
           </plist>
           PLIST
@@ -110,7 +99,7 @@ workflows:
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
           cd ../..
-          echo "✅ .ipa export completed successfully"
+          echo "✅ .ipa exported successfully"
 
     artifacts:
       - ios/build/**/*.ipa
