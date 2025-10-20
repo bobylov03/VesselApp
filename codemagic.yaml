@@ -70,7 +70,7 @@ workflows:
 
     publishing:
       app_store_connect:
-        issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
+        api_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
         key_identifier: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
-        private_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
+        issuer_identifier: Environ("APP_STORE_CONNECT_ISSUER_ID")
         submit_to_testflight: true
