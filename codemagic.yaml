@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: mykey  # ✅ твоя интеграция Apple Developer Portal
+      app_store_connect: mykey
 
     environment:
       node: 20.11.1
@@ -17,7 +17,7 @@ workflows:
     scripts:
       - name: 📦 Install dependencies
         script: |
-          echo "Installing dependencies..."
+          echo "📦 Installing dependencies..."
           npm ci
           npm install @capacitor/ios --force
           npx cap sync ios
@@ -37,6 +37,7 @@ workflows:
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
                      CODE_SIGN_STYLE=Automatic \
+                     -allowProvisioningUpdates \
                      clean archive || exit 1
           cd ../..
           echo "✅ Archive complete"
@@ -45,10 +46,7 @@ workflows:
         script: |
           echo "📦 Exporting .ipa..."
           cd ios/App
-          xcodebuild -exportArchive \
-                     -archivePath ../build/App.xcarchive \
-                     -exportPath ../build \
-                     -exportOptionsPlist <(cat <<EOF
+          cat > ExportOptions.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -59,8 +57,12 @@ workflows:
             <key>uploadBitcode</key><false/>
           </dict>
           </plist>
-          EOF
-          )
+          PLIST
+          xcodebuild -exportArchive \
+                     -archivePath ../build/App.xcarchive \
+                     -exportPath ../build \
+                     -exportOptionsPlist ExportOptions.plist \
+                     -allowProvisioningUpdates || exit 1
           cd ../..
           echo "✅ Export complete"
 
