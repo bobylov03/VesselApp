@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: mykey  # Имя твоей интеграции из Codemagic → Integrations
+      app_store_connect: mykey  # Имя твоей интеграции из Codemagic
 
     environment:
       node: 20.11.1
@@ -14,8 +14,10 @@ workflows:
         APP_NAME: "VesselApp"
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
+
+    code_signing:
       provisioning_profiles:
-        - VesselApp_Distribution   # Твоё имя provisioning profile из Codemagic
+        - VesselApp_Distribution  # Название профиля из Codemagic → iOS provisioning profiles
 
     scripts:
       - name: Install dependencies
