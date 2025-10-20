@@ -13,6 +13,8 @@ workflows:
       vars:
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
+        APP_NAME: "VesselApp"
+      flutter: stable  # если используешь Flutter (Capacitor не мешает)
 
     scripts:
       - name: 📦 Install dependencies
@@ -37,8 +39,7 @@ workflows:
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
                      CODE_SIGN_STYLE=Automatic \
-                     -allowProvisioningUpdates \
-                     clean archive || exit 1
+                     -allowProvisioningUpdates clean archive || exit 1
           cd ../..
           echo "✅ Archive complete"
 
@@ -54,7 +55,8 @@ workflows:
             <key>method</key><string>app-store</string>
             <key>signingStyle</key><string>automatic</string>
             <key>uploadSymbols</key><true/>
-            <key>uploadBitcode</key><false/>
+            <key>compileBitcode</key><false/>
+            <key>stripSwiftSymbols</key><true/>
           </dict>
           </plist>
           PLIST
