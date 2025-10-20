@@ -12,16 +12,8 @@ workflows:
         APP_STORE_CONNECT_ISSUER_ID: Environ("APP_STORE_CONNECT_ISSUER_ID")
         APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
-        DEVELOPMENT_TEAM: "AJ5RPURRUV"  # ← твой Team ID
-
-    code_signing:
-      xcode:
-        use_automatic_signing: true
-        apple_team_id: "AJ5RPURRUV"     # ← тот же Team ID
-        bundle_identifier: "vesseldatabase.app"
-        app_store_connect_issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
-        app_store_connect_key_identifier: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
-        app_store_connect_private_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
+        DEVELOPMENT_TEAM: "AJ5RPURRUV"  # твой Team ID
+        BUNDLE_ID: "vesseldatabase.app"
 
     scripts:
       - name: Install dependencies
@@ -44,7 +36,6 @@ workflows:
         script: |
           echo "🚀 Building and exporting iOS release..."
           cd ios/App
-
           mkdir -p ../build
 
           echo "🔧 Archiving app (allowing provisioning updates)..."
@@ -54,14 +45,15 @@ workflows:
                      -configuration Release \
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
+                     PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
 
           echo "📦 Exporting .ipa..."
           xcodebuild -exportArchive \
                      -archivePath ../build/App.xcarchive \
-                     -exportOptionsPlist ExportOptions.plist \
                      -exportPath ../build \
+                     -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
 
           echo "📂 Checking build folder content:"
@@ -78,7 +70,7 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
-        key_id: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
+        key_identifier: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
+        private_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
         submit_to_testflight: true
