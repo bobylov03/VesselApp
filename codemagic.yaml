@@ -13,9 +13,9 @@ workflows:
       vars:
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
+        PROFILE_NAME: "VesselApp_Distribution"
 
     scripts:
-      # 1️⃣ Установка зависимостей
       - name: Install dependencies
         script: |
           echo "📦 Installing dependencies..."
@@ -25,17 +25,15 @@ workflows:
           cd ios/App && pod install && cd ../..
           echo "✅ Dependencies installed"
 
-      # 2️⃣ Получаем provisioning profiles и сертификаты из App Store Connect
       - name: Fetch signing files from App Store Connect
         script: |
           echo "🔑 Fetching provisioning profiles and certificates..."
-          app-store-connect fetch-signing-files "vesseldatabase.app" \
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
             --create \
             --verbose
           echo "✅ Signing files fetched successfully"
 
-      # 3️⃣ Устанавливаем сертификаты и provisioning profiles на билд-агенте
       - name: Install signing assets
         script: |
           echo "🔧 Installing certificates and provisioning profiles..."
@@ -44,23 +42,31 @@ workflows:
           profiles install
           echo "✅ Certificates and profiles installed"
 
-      # 4️⃣ Привязываем профиль только к таргету App
+      - name: Debug installed provisioning profiles
+        script: |
+          echo "🔍 Listing installed profiles..."
+          ls -1 ~/Library/MobileDevice/Provisioning\ Profiles || true
+          grep -A3 "<key>Name</key>" ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision || true
+
       - name: Bind provisioning profile to App target
         script: |
           echo "📘 Binding provisioning profile to App target..."
           xcode-project use-profiles \
             --project "ios/App/App.xcodeproj" \
             --target "App" \
-            --bundle-id "vesseldatabase.app" \
+            --bundle-id "$BUNDLE_ID" \
             --export-method "app-store"
-          echo "✅ Bound provisioning profile to App target (Pods remain Automatic)."
+          echo "✅ Bound provisioning profile to App target"
 
-      # 5️⃣ Архивирование проекта (без ручных overrides)
       - name: Build (archive)
         script: |
           echo "🚀 Archiving app..."
           cd ios/App
           rm -rf ~/Library/Developer/Xcode/DerivedData
+
+          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -n 1)
+          echo "📄 Using provisioning profile: $PROFILE_PATH"
+
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -68,12 +74,14 @@ workflows:
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
+                     PROVISIONING_PROFILE_SPECIFIER="$PROFILE_NAME" \
+                     CODE_SIGN_STYLE=Manual \
+                     CODE_SIGN_IDENTITY="Apple Distribution" \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
           cd ../..
           echo "✅ Archive completed successfully"
 
-      # 6️⃣ Экспорт IPA с правильным профилем
       - name: Export .ipa (App Store)
         script: |
           echo "📦 Exporting .ipa..."
@@ -90,6 +98,8 @@ workflows:
             <dict>
               <key>vesseldatabase.app</key><string>VesselApp_Distribution</string>
             </dict>
+            <key>uploadBitcode</key><false/>
+            <key>uploadSymbols</key><true/>
           </dict>
           </plist>
           PLIST
@@ -99,7 +109,6 @@ workflows:
                      -exportPath ../build \
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
-
           cd ../..
           echo "✅ .ipa export completed successfully"
 
