@@ -14,6 +14,15 @@ workflows:
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
         DEVELOPMENT_TEAM: "AJ5RPURRUV"  # ← твой Team ID
 
+    code_signing:
+      xcode:
+        use_automatic_signing: true
+        apple_team_id: "AJ5RPURRUV"     # ← тот же Team ID
+        bundle_identifier: "vesseldatabase.app"
+        app_store_connect_issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
+        app_store_connect_key_identifier: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
+        app_store_connect_private_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
+
     scripts:
       - name: Install dependencies
         script: |
@@ -55,7 +64,7 @@ workflows:
                      -exportPath ../build \
                      -allowProvisioningUpdates || exit 1
 
-          echo "📂 Проверим содержимое build-папки:"
+          echo "📂 Checking build folder content:"
           find ../build -type f -print
 
           cd ../..
@@ -69,7 +78,7 @@ workflows:
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        api_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
+        key_id: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
+        issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
         submit_to_testflight: true
