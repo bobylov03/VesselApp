@@ -15,29 +15,47 @@ workflows:
         BUNDLE_ID: "vesseldatabase.app"
 
     scripts:
-      - name: Install deps
+      - name: Install dependencies
         script: |
+          echo "📦 Installing dependencies..."
           npm ci
           npm install @capacitor/ios --force
           npx cap sync ios
           cd ios/App && pod install && cd ../..
 
-      - name: Install signing assets (certs + profiles) and bind to target App
+      # 1️⃣ Получаем подписывающие файлы из App Store Connect
+      - name: Fetch signing files from App Store Connect
         script: |
-          # Загрузить сертификат из Codemagic UI в системный кейчейн билдера
+          echo "🔑 Fetching provisioning profiles and certificates..."
+          app-store-connect fetch-signing-files "vesseldatabase.app" \
+            --type IOS_APP_STORE \
+            --team-id "AJ5RPURRUV" \
+            --create
+
+      # 2️⃣ Устанавливаем сертификаты и provisioning profiles
+      - name: Install signing assets on build agent
+        script: |
+          echo "🔧 Installing certificates and profiles..."
           keychain initialize
           keychain add-certificates
+          profiles install
+          echo "✅ Certificates and provisioning profiles installed"
 
-          # Подхватить загруженные в Codemagic provisioning profiles
-          # и ПРОПИСАТЬ их в проект для таргета App (Pods не трогаем)
+      # 3️⃣ Привязываем профиль только к таргету App
+      - name: Bind provisioning profile to target App
+        script: |
+          echo "📘 Binding provisioning profile to App target..."
           xcode-project use-profiles \
             --project "ios/App/App.xcodeproj" \
-            --target "App"
+            --target "App" \
+            --bundle-id "vesseldatabase.app" \
+            --export-method "app-store"
+          echo "✅ Bound to App target only (Pods remain automatic)."
 
-          echo "✓ Signing set for target 'App' only. Pods remain Automatic."
-
-      - name: Build (no per-target overrides!)
+      # 4️⃣ Архивирование без ручных override переменных
+      - name: Build (archive)
         script: |
+          echo "🚀 Archiving app..."
           cd ios/App
           rm -rf ~/Library/Developer/Xcode/DerivedData
           xcodebuild -workspace App.xcworkspace \
@@ -50,7 +68,11 @@ workflows:
                      -allowProvisioningUpdates \
                      clean archive || exit 1
 
-          # Экспорт (используем provisioningProfiles в ExportOptions, а не через PROVISIONING_PROFILE_SPECIFIER)
+      # 5️⃣ Экспорт IPA с корректным профилем
+      - name: Export .ipa (app-store)
+        script: |
+          echo "📦 Exporting .ipa..."
+          cd ios/App
           cat > ExportOptions.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -71,11 +93,14 @@ workflows:
                      -exportPath ../build \
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
+
           cd ../..
+          echo "✅ Export complete"
 
     artifacts:
       - ios/build/**/*.ipa
       - ios/build/App.xcarchive/**/*
+
     publishing:
       app_store_connect:
         auth: integration
