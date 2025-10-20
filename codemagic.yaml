@@ -13,6 +13,10 @@ workflows:
         APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
 
+    code_signing:
+      xcode:
+        use_auto_signing: true
+
     scripts:
       - name: Install dependencies
         script: |
@@ -37,22 +41,22 @@ workflows:
 
           mkdir -p ../build
 
-          # 1️⃣ Архивируем приложение
+          echo "🔧 Archiving app..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
                      -configuration Release \
                      -archivePath ../build/App.xcarchive \
-                     clean archive
+                     clean archive || exit 1
 
-          # 2️⃣ Экспортируем ipa-файл
+          echo "📦 Exporting .ipa..."
           xcodebuild -exportArchive \
                      -archivePath ../build/App.xcarchive \
                      -exportOptionsPlist ExportOptions.plist \
-                     -exportPath ../build || true
+                     -exportPath ../build || exit 1
 
-          echo "📦 Содержимое build-папки:"
-          ls -R ../build
+          echo "📂 Проверим содержимое build-папки:"
+          find ../build -type f -print
 
           cd ../..
 
