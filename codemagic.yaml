@@ -15,11 +15,11 @@ workflows:
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
 
-    automatic_code_signing:
-      apple_team_id: "AJ5RPURRUV"
-      bundle_identifier: "vesseldatabase.app"
-      provisioning_profile_name: "VesselApp_Distribution"
-      certificate_key: "VesselDatabase12"
+    code_signing:
+      provisioning_profiles:
+        - VesselApp_Distribution
+      certificates:
+        - VesselDatabase12
 
     scripts:
       - name: Install dependencies
