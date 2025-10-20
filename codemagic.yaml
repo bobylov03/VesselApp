@@ -30,57 +30,37 @@ workflows:
           pod install
           cd ../..
 
-      - name: Build and export .ipa manually
+      - name: Build and export .ipa
         script: |
-          echo "🚀 Building iOS release..."
+          echo "🚀 Building and exporting iOS release..."
           cd ios/App
 
-          ARCHIVE_PATH="../build/App.xcarchive"
-          EXPORT_PATH="../build/ipa"
+          mkdir -p ../build
 
-          mkdir -p $EXPORT_PATH
-
-          # 1️⃣ Архивируем
+          # 1️⃣ Архивируем приложение
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
                      -configuration Release \
-                     -archivePath $ARCHIVE_PATH \
-                     clean archive || exit 1
+                     -archivePath ../build/App.xcarchive \
+                     clean archive
 
-          # 2️⃣ Экспортируем ipa (если ExportOptions.plist есть — используем, если нет — создаём временный)
-          if [ ! -f "ExportOptions.plist" ]; then
-            echo "Creating temporary ExportOptions.plist"
-            cat > ExportOptions.plist <<EOF
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
-  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>app-store</string>
-  <key>uploadSymbols</key>
-  <true/>
-  <key>compileBitcode</key>
-  <false/>
-</dict>
-</plist>
-EOF
-          fi
-
+          # 2️⃣ Экспортируем ipa-файл
           xcodebuild -exportArchive \
-                     -archivePath $ARCHIVE_PATH \
-                     -exportPath $EXPORT_PATH \
-                     -exportOptionsPlist ExportOptions.plist || true
+                     -archivePath ../build/App.xcarchive \
+                     -exportOptionsPlist ExportOptions.plist \
+                     -exportPath ../build || true
 
-          echo "📦 Contents of export path:"
-          ls -la $EXPORT_PATH
+          echo "📦 Содержимое build-папки:"
+          ls -R ../build
 
           cd ../..
 
     artifacts:
-      - ios/build/ipa/*.ipa
-      - ios/App/build/**/*.app
+      - ios/build/*.ipa
+      - ios/build/**/*.ipa
+      - ios/App/build/*.ipa
+      - ios/App/build/**/*.ipa
       - ios/build/App.xcarchive/**/*
 
     publishing:
