@@ -6,6 +6,12 @@ workflows:
     integrations:
       app_store_connect: mykey  # Имя твоей интеграции из Codemagic
 
+    automatic_code_signing:
+      apple_sign_in: mykey      # То же имя, что и интеграция App Store Connect
+      bundle_identifier: vesseldatabase.app
+      team_id: AJ5RPURRUV
+      provisioning_profile_type: app-store
+
     environment:
       node: 20.11.1
       xcode: latest
