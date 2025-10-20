@@ -30,22 +30,30 @@ workflows:
           pod install
           cd ../..
 
-      - name: Build iOS app
+      - name: Build and export .ipa
         script: |
-          echo "🚀 Building iOS release..."
+          echo "🚀 Building and exporting iOS release..."
           cd ios/App
+
+          # 1️⃣ Архивируем приложение
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
                      -configuration Release \
-                     -allowProvisioningUpdates \
                      -archivePath ../build/App.xcarchive \
                      clean archive
+
+          # 2️⃣ Экспортируем ipa-файл
+          xcodebuild -exportArchive \
+                     -archivePath ../build/App.xcarchive \
+                     -exportPath ../build/Release-iphoneos \
+                     -exportOptionsPlist ExportOptions.plist || true
+
           cd ../..
 
     artifacts:
-      - ios/App/build/Release-iphoneos/*.app
       - ios/App/build/Release-iphoneos/*.ipa
+      - ios/App/build/Release-iphoneos/*.app
       - ios/build/App.xcarchive/**/*
 
     publishing:
