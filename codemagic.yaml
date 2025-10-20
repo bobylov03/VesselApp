@@ -13,11 +13,6 @@ workflows:
         APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
 
-    cache:
-      paths:
-        - ~/.npm
-        - ~/.cocoapods
-
     scripts:
       - name: Install dependencies
         script: |
