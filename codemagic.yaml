@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: mykey  # Имя интеграции в Codemagic
+      app_store_connect: mykey  # имя интеграции из Codemagic
 
     environment:
       node: 20.11.1
@@ -14,6 +14,8 @@ workflows:
         APP_NAME: "VesselApp"
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
+        CODE_SIGN_IDENTITY: "Apple Distribution"
+        PROVISIONING_PROFILE_SPECIFIER: "mykey"
 
     scripts:
       - name: Install dependencies
@@ -34,14 +36,14 @@ workflows:
 
       - name: Build and export .ipa
         script: |
-          echo "🚀 Building and exporting iOS release with automatic signing..."
+          echo "🚀 Building iOS release..."
           cd ios/App
           mkdir -p ../build
 
-          # Очистка DerivedData перед сборкой
+          # Очистка DerivedData
           rm -rf ~/Library/Developer/Xcode/DerivedData
 
-          # 🏗️ Сборка и архивирование
+          # 🏗️ Архивация
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -49,25 +51,48 @@ workflows:
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
-                     CODE_SIGN_STYLE=Automatic \
+                     CODE_SIGN_STYLE=Manual \
+                     CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+                     PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_SPECIFIER" \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
 
-          # 📦 Экспорт .ipa для App Store
+          # 📦 Экспорт ipa для TestFlight
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+            <key>teamID</key>
+            <string>$DEVELOPMENT_TEAM</string>
+            <key>uploadBitcode</key>
+            <false/>
+            <key>compileBitcode</key>
+            <true/>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>$BUNDLE_ID</key>
+              <string>$PROVISIONING_PROFILE_SPECIFIER</string>
+            </dict>
+          </dict>
+          </plist>
+          EOF
+
           xcodebuild -exportArchive \
                      -archivePath ../build/App.xcarchive \
                      -exportPath ../build \
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
 
-          echo "📂 Checking build folder content:"
-          find ../build -type f -print
           cd ../..
+          echo "✅ Build complete"
 
     artifacts:
-      - ios/build/*.ipa
       - ios/build/**/*.ipa
-      - ios/App/build/*.ipa
       - ios/App/build/**/*.ipa
       - ios/build/App.xcarchive/**/*
 
