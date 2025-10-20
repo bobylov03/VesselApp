@@ -2,61 +2,71 @@ workflows:
   ios-build:
     name: Build iOS for TestFlight
     max_build_duration: 60
+
+    integrations:
+      app_store_connect: mykey  # ✅ твоя интеграция Apple Developer Portal
+
     environment:
-      vars:
-        APP_NAME: "VesselApp"
-        BUNDLE_ID: "vesseldatabase.app"
-        APPLE_TEAM_ID: "AJ5RPURRUV"
-        APP_STORE_CONNECT_KEY_IDENTIFIER: "B6FY374P4S"
-        APP_STORE_CONNECT_ISSUER_ID: "61b8c759-faf7-4d66-ae16-112010c41c81"
-        APP_STORE_CONNECT_PRIVATE_KEY: Encrypted("your_base64_private_key_here") # не нужно вручную, Codemagic сам подставит из интеграции
       node: 20.11.1
       xcode: latest
       cocoapods: default
-
-    integrations:
-      app_store_connect: mykey
-
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: "main"
-          include: true
-          source: true
+      vars:
+        DEVELOPMENT_TEAM: "AJ5RPURRUV"
+        BUNDLE_ID: "vesseldatabase.app"
 
     scripts:
-      - name: 🔧 Install dependencies
+      - name: 📦 Install dependencies
         script: |
-          npm install
-          npm run build
+          echo "Installing dependencies..."
+          npm ci
+          npm install @capacitor/ios --force
           npx cap sync ios
+          cd ios/App && pod install && cd ../..
+          echo "✅ Dependencies installed"
 
-      - name: 🧱 Build iOS app
+      - name: 🧱 Build (archive)
         script: |
+          echo "🚀 Building iOS app..."
           cd ios/App
-          xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
-            PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            clean archive
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          xcodebuild -workspace App.xcworkspace \
+                     -scheme App \
+                     -sdk iphoneos \
+                     -configuration Release \
+                     -archivePath ../build/App.xcarchive \
+                     DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
+                     PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
+                     CODE_SIGN_STYLE=Automatic \
+                     clean archive || exit 1
+          cd ../..
+          echo "✅ Archive complete"
 
       - name: 📦 Export IPA
         script: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            -exportOptionsPlist ios/App/exportOptions.plist \
-            -exportPath $CM_BUILD_DIR/build/ipa
+          echo "📦 Exporting .ipa..."
+          cd ios/App
+          xcodebuild -exportArchive \
+                     -archivePath ../build/App.xcarchive \
+                     -exportPath ../build \
+                     -exportOptionsPlist <(cat <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>uploadBitcode</key><false/>
+          </dict>
+          </plist>
+          EOF
+          )
+          cd ../..
+          echo "✅ Export complete"
 
     artifacts:
-      - build/ipa/*.ipa
+      - ios/build/**/*.ipa
+      - ios/build/App.xcarchive/**/*
 
     publishing:
       app_store_connect:
