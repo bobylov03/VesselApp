@@ -11,31 +11,35 @@ workflows:
       xcode: latest
       cocoapods: default
       vars:
-        APP_NAME: "VesselApp"
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
-        PROVISIONING_PROFILE_SPECIFIER: "VesselApp_Distribution"
-        CODE_SIGN_IDENTITY: "Apple Distribution"
 
     scripts:
-      - name: Install dependencies
+      - name: Install deps
         script: |
-          echo "📦 Installing npm dependencies..."
           npm ci
           npm install @capacitor/ios --force
           npx cap sync ios
-          cd ios/App
-          pod install
-          cd ../..
+          cd ios/App && pod install && cd ../..
 
-      - name: Build and export .ipa
+      - name: Install signing assets (certs + profiles) and bind to target App
         script: |
-          echo "🚀 Building iOS release..."
-          cd ios/App
-          mkdir -p ../build
-          rm -rf ~/Library/Developer/Xcode/DerivedData
+          # Загрузить сертификат из Codemagic UI в системный кейчейн билдера
+          keychain initialize
+          keychain add-certificates
 
-          echo "🔧 Archiving with manual signing..."
+          # Подхватить загруженные в Codemagic provisioning profiles
+          # и ПРОПИСАТЬ их в проект для таргета App (Pods не трогаем)
+          xcode-project use-profiles \
+            --project "ios/App/App.xcodeproj" \
+            --target "App"
+
+          echo "✓ Signing set for target 'App' only. Pods remain Automatic."
+
+      - name: Build (no per-target overrides!)
+        script: |
+          cd ios/App
+          rm -rf ~/Library/Developer/Xcode/DerivedData
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -43,27 +47,35 @@ workflows:
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
-                     CODE_SIGN_STYLE=Manual \
-                     CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
-                     PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_SPECIFIER" \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
 
-          echo "📦 Exporting .ipa..."
+          # Экспорт (используем provisioningProfiles в ExportOptions, а не через PROVISIONING_PROFILE_SPECIFIER)
+          cat > ExportOptions.plist <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>vesseldatabase.app</key><string>VesselApp_Distribution</string>
+            </dict>
+          </dict>
+          </plist>
+          PLIST
+
           xcodebuild -exportArchive \
                      -archivePath ../build/App.xcarchive \
                      -exportPath ../build \
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
-
           cd ../..
-          echo "✅ Build complete"
 
     artifacts:
       - ios/build/**/*.ipa
-      - ios/App/build/**/*.ipa
       - ios/build/App.xcarchive/**/*
-
     publishing:
       app_store_connect:
         auth: integration
