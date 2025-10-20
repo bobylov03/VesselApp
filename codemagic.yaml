@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: vesselapp_integration  # ← замени на точное имя интеграции из Codemagic
+      app_store_connect: mykey  # ← замени на точное имя интеграции из Codemagic
 
     environment:
       node: 20.11.1
