@@ -2,24 +2,32 @@ workflows:
   ios-build:
     name: Build iOS for TestFlight
     max_build_duration: 60
+
     environment:
       node: 20.11.1
       xcode: latest
       cocoapods: default
       vars:
         APP_NAME: "VesselApp"
+        APP_STORE_CONNECT_ISSUER_ID: Environ("APP_STORE_CONNECT_ISSUER_ID")
+        APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
+        APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
 
     scripts:
       - name: Install dependencies
         script: |
           echo "📦 Installing npm dependencies..."
           npm ci
+
           echo "📦 Installing Capacitor iOS platform..."
           npm install @capacitor/ios --force
+
           echo "🔧 Fixing permissions..."
           chmod +x ./node_modules/.bin/cap || true
+
           echo "🔄 Syncing iOS platform..."
           npx cap sync ios
+
           echo "📁 Installing CocoaPods dependencies..."
           cd ios/App
           pod install
@@ -44,6 +52,8 @@ workflows:
       - ios/App/build/**/*.app
 
     publishing:
-      email:
-        recipients:
-          - bobylevvlad0310@icloud.com
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
