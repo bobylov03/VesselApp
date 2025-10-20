@@ -12,7 +12,7 @@ workflows:
         APP_STORE_CONNECT_ISSUER_ID: Environ("APP_STORE_CONNECT_ISSUER_ID")
         APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
-        DEVELOPMENT_TEAM: "AJ5RPURRUV"  # твой Team ID
+        DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
 
     scripts:
@@ -38,7 +38,7 @@ workflows:
           cd ios/App
           mkdir -p ../build
 
-          echo "🔧 Archiving app (allowing provisioning updates)..."
+          echo "🔧 Archiving app..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -70,7 +70,8 @@ workflows:
 
     publishing:
       app_store_connect:
+        auth: api_key
         api_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
-        key_identifier: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
-        issuer_identifier: Environ("APP_STORE_CONNECT_ISSUER_ID")
+        key_id: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
+        issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
         submit_to_testflight: true
