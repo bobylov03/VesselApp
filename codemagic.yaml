@@ -38,20 +38,22 @@ workflows:
 
           mkdir -p ../build
 
-          echo "🔧 Archiving app..."
+          echo "🔧 Archiving app (allowing provisioning updates)..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
                      -configuration Release \
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
+                     -allowProvisioningUpdates \
                      clean archive || exit 1
 
           echo "📦 Exporting .ipa..."
           xcodebuild -exportArchive \
                      -archivePath ../build/App.xcarchive \
                      -exportOptionsPlist ExportOptions.plist \
-                     -exportPath ../build || exit 1
+                     -exportPath ../build \
+                     -allowProvisioningUpdates || exit 1
 
           echo "📂 Проверим содержимое build-папки:"
           find ../build -type f -print
