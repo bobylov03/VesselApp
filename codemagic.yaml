@@ -15,12 +15,6 @@ workflows:
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
 
-    code_signing:
-      provisioning_profiles:
-        - VesselApp_Distribution
-      certificates:
-        - VesselDatabase12
-
     scripts:
       - name: Install dependencies
         script: |
@@ -39,6 +33,7 @@ workflows:
           mkdir -p ../build
           rm -rf ~/Library/Developer/Xcode/DerivedData
 
+          echo "🔧 Archiving app with automatic signing..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -50,6 +45,7 @@ workflows:
                      -allowProvisioningUpdates \
                      clean archive || exit 1
 
+          echo "📦 Exporting .ipa..."
           xcodebuild -exportArchive \
                      -archivePath ../build/App.xcarchive \
                      -exportPath ../build \
