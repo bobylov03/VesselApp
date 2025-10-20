@@ -14,6 +14,8 @@ workflows:
         APP_NAME: "VesselApp"
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
+        PROVISIONING_PROFILE_SPECIFIER: "VesselApp_Distribution"
+        CODE_SIGN_IDENTITY: "Apple Distribution"
 
     scripts:
       - name: Install dependencies
@@ -33,7 +35,7 @@ workflows:
           mkdir -p ../build
           rm -rf ~/Library/Developer/Xcode/DerivedData
 
-          echo "🔧 Archiving app with automatic signing..."
+          echo "🔧 Archiving with manual signing..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -41,7 +43,9 @@ workflows:
                      -archivePath ../build/App.xcarchive \
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
-                     CODE_SIGN_STYLE=Automatic \
+                     CODE_SIGN_STYLE=Manual \
+                     CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
+                     PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_SPECIFIER" \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
 
