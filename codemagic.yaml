@@ -15,6 +15,7 @@ workflows:
         BUNDLE_ID: "vesseldatabase.app"
 
     scripts:
+      # 1️⃣ Установка зависимостей
       - name: Install dependencies
         script: |
           echo "📦 Installing dependencies..."
@@ -22,27 +23,29 @@ workflows:
           npm install @capacitor/ios --force
           npx cap sync ios
           cd ios/App && pod install && cd ../..
+          echo "✅ Dependencies installed"
 
-      # 1️⃣ Получаем подписывающие файлы из App Store Connect
+      # 2️⃣ Получаем provisioning profiles и сертификаты из App Store Connect
       - name: Fetch signing files from App Store Connect
         script: |
           echo "🔑 Fetching provisioning profiles and certificates..."
           app-store-connect fetch-signing-files "vesseldatabase.app" \
             --type IOS_APP_STORE \
-            --team-id "AJ5RPURRUV" \
-            --create
+            --create \
+            --verbose
+          echo "✅ Signing files fetched successfully"
 
-      # 2️⃣ Устанавливаем сертификаты и provisioning profiles
-      - name: Install signing assets on build agent
+      # 3️⃣ Устанавливаем сертификаты и provisioning profiles на билд-агенте
+      - name: Install signing assets
         script: |
-          echo "🔧 Installing certificates and profiles..."
+          echo "🔧 Installing certificates and provisioning profiles..."
           keychain initialize
           keychain add-certificates
           profiles install
-          echo "✅ Certificates and provisioning profiles installed"
+          echo "✅ Certificates and profiles installed"
 
-      # 3️⃣ Привязываем профиль только к таргету App
-      - name: Bind provisioning profile to target App
+      # 4️⃣ Привязываем профиль только к таргету App
+      - name: Bind provisioning profile to App target
         script: |
           echo "📘 Binding provisioning profile to App target..."
           xcode-project use-profiles \
@@ -50,9 +53,9 @@ workflows:
             --target "App" \
             --bundle-id "vesseldatabase.app" \
             --export-method "app-store"
-          echo "✅ Bound to App target only (Pods remain automatic)."
+          echo "✅ Bound provisioning profile to App target (Pods remain Automatic)."
 
-      # 4️⃣ Архивирование без ручных override переменных
+      # 5️⃣ Архивирование проекта (без ручных overrides)
       - name: Build (archive)
         script: |
           echo "🚀 Archiving app..."
@@ -67,12 +70,15 @@ workflows:
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
                      -allowProvisioningUpdates \
                      clean archive || exit 1
+          cd ../..
+          echo "✅ Archive completed successfully"
 
-      # 5️⃣ Экспорт IPA с корректным профилем
-      - name: Export .ipa (app-store)
+      # 6️⃣ Экспорт IPA с правильным профилем
+      - name: Export .ipa (App Store)
         script: |
           echo "📦 Exporting .ipa..."
           cd ios/App
+
           cat > ExportOptions.plist <<'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -95,7 +101,7 @@ workflows:
                      -allowProvisioningUpdates || exit 1
 
           cd ../..
-          echo "✅ Export complete"
+          echo "✅ .ipa export completed successfully"
 
     artifacts:
       - ios/build/**/*.ipa
