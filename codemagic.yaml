@@ -9,9 +9,6 @@ workflows:
       cocoapods: default
       vars:
         APP_NAME: "VesselApp"
-        APP_STORE_CONNECT_ISSUER_ID: Environ("APP_STORE_CONNECT_ISSUER_ID")
-        APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
-        APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
 
@@ -38,7 +35,7 @@ workflows:
           cd ios/App
           mkdir -p ../build
 
-          echo "🔧 Archiving app..."
+          echo "🔧 Archiving app (with automatic provisioning)..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -56,9 +53,8 @@ workflows:
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
 
-          echo "📂 Checking build folder content:"
+          echo "📂 Build folder content:"
           find ../build -type f -print
-
           cd ../..
 
     artifacts:
@@ -70,8 +66,5 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: api_key
-        api_key: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
-        key_id: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
-        issuer_id: Environ("APP_STORE_CONNECT_ISSUER_ID")
+        auth: integration          # ← используем подключённую интеграцию App Store Connect
         submit_to_testflight: true
