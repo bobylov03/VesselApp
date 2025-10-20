@@ -13,6 +13,11 @@ workflows:
         APP_STORE_CONNECT_KEY_IDENTIFIER: Environ("APP_STORE_CONNECT_KEY_IDENTIFIER")
         APP_STORE_CONNECT_PRIVATE_KEY: Environ("APP_STORE_CONNECT_PRIVATE_KEY")
 
+    cache:
+      paths:
+        - ~/.npm
+        - ~/.cocoapods
+
     scripts:
       - name: Install dependencies
         script: |
@@ -22,10 +27,7 @@ workflows:
           echo "📦 Installing Capacitor iOS platform..."
           npm install @capacitor/ios --force
 
-          echo "🔧 Fixing permissions..."
-          chmod +x ./node_modules/.bin/cap || true
-
-          echo "🔄 Syncing iOS platform..."
+          echo "🔧 Syncing iOS platform..."
           npx cap sync ios
 
           echo "📁 Installing CocoaPods dependencies..."
@@ -41,15 +43,15 @@ workflows:
                      -scheme App \
                      -sdk iphoneos \
                      -configuration Release \
-                     clean build \
-                     CODE_SIGN_IDENTITY="" \
-                     CODE_SIGNING_REQUIRED=NO \
-                     CODE_SIGNING_ALLOWED=NO
+                     -allowProvisioningUpdates \
+                     -archivePath ../build/App.xcarchive \
+                     clean archive
           cd ../..
 
     artifacts:
-      - ios/App/build/**/*.ipa
-      - ios/App/build/**/*.app
+      - ios/App/build/Release-iphoneos/*.app
+      - ios/App/build/Release-iphoneos/*.ipa
+      - ios/build/App.xcarchive/**/*
 
     publishing:
       app_store_connect:
