@@ -3,6 +3,9 @@ workflows:
     name: Build iOS for TestFlight
     max_build_duration: 60
 
+    integrations:
+      app_store_connect: your_integration_name  # ← имя интеграции из Codemagic (см. шаг 1 ниже)
+
     environment:
       node: 20.11.1
       xcode: latest
@@ -35,7 +38,7 @@ workflows:
           cd ios/App
           mkdir -p ../build
 
-          echo "🔧 Archiving app (with automatic provisioning)..."
+          echo "🔧 Archiving app..."
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
@@ -53,7 +56,7 @@ workflows:
                      -exportOptionsPlist ExportOptions.plist \
                      -allowProvisioningUpdates || exit 1
 
-          echo "📂 Build folder content:"
+          echo "📂 Checking build folder content:"
           find ../build -type f -print
           cd ../..
 
@@ -66,5 +69,5 @@ workflows:
 
     publishing:
       app_store_connect:
-        auth: integration          # ← используем подключённую интеграцию App Store Connect
+        auth: integration
         submit_to_testflight: true
