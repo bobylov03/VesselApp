@@ -30,30 +30,57 @@ workflows:
           pod install
           cd ../..
 
-      - name: Build and export .ipa
+      - name: Build and export .ipa manually
         script: |
-          echo "🚀 Building and exporting iOS release..."
+          echo "🚀 Building iOS release..."
           cd ios/App
 
-          # 1️⃣ Архивируем приложение
+          ARCHIVE_PATH="../build/App.xcarchive"
+          EXPORT_PATH="../build/ipa"
+
+          mkdir -p $EXPORT_PATH
+
+          # 1️⃣ Архивируем
           xcodebuild -workspace App.xcworkspace \
                      -scheme App \
                      -sdk iphoneos \
                      -configuration Release \
-                     -archivePath ../build/App.xcarchive \
-                     clean archive
+                     -archivePath $ARCHIVE_PATH \
+                     clean archive || exit 1
 
-          # 2️⃣ Экспортируем ipa-файл
+          # 2️⃣ Экспортируем ipa (если ExportOptions.plist есть — используем, если нет — создаём временный)
+          if [ ! -f "ExportOptions.plist" ]; then
+            echo "Creating temporary ExportOptions.plist"
+            cat > ExportOptions.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" 
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>app-store</string>
+  <key>uploadSymbols</key>
+  <true/>
+  <key>compileBitcode</key>
+  <false/>
+</dict>
+</plist>
+EOF
+          fi
+
           xcodebuild -exportArchive \
-                     -archivePath ../build/App.xcarchive \
-                     -exportPath ../build/Release-iphoneos \
+                     -archivePath $ARCHIVE_PATH \
+                     -exportPath $EXPORT_PATH \
                      -exportOptionsPlist ExportOptions.plist || true
+
+          echo "📦 Contents of export path:"
+          ls -la $EXPORT_PATH
 
           cd ../..
 
     artifacts:
-      - ios/App/build/Release-iphoneos/*.ipa
-      - ios/App/build/Release-iphoneos/*.app
+      - ios/build/ipa/*.ipa
+      - ios/App/build/**/*.app
       - ios/build/App.xcarchive/**/*
 
     publishing:
