@@ -4,12 +4,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: mykey
-
-    automatic_code_signing:
-      apple_team_id: AJ5RPURRUV
-      bundle_identifier: vesseldatabase.app
-      certificate_key: mykey
+      app_store_connect: mykey   # 🔑 подключённый ключ из Codemagic → Integrations
 
     environment:
       node: 20.11.1
@@ -19,7 +14,7 @@ workflows:
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
         APP_NAME: "VesselApp"
-      flutter: stable  # оставить, даже если не Flutter — не мешает
+      flutter: stable  # не мешает, даже если не Flutter
 
     scripts:
       - name: 📦 Install dependencies
