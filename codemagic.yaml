@@ -6,6 +6,11 @@ workflows:
     integrations:
       app_store_connect: mykey
 
+    automatic_code_signing:
+      apple_team_id: AJ5RPURRUV
+      bundle_identifier: vesseldatabase.app
+      certificate_key: mykey
+
     environment:
       node: 20.11.1
       xcode: latest
@@ -14,7 +19,7 @@ workflows:
         DEVELOPMENT_TEAM: "AJ5RPURRUV"
         BUNDLE_ID: "vesseldatabase.app"
         APP_NAME: "VesselApp"
-      flutter: stable  # если используешь Flutter (Capacitor не мешает)
+      flutter: stable  # оставить, даже если не Flutter — не мешает
 
     scripts:
       - name: 📦 Install dependencies
@@ -39,7 +44,8 @@ workflows:
                      DEVELOPMENT_TEAM=$DEVELOPMENT_TEAM \
                      PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \
                      CODE_SIGN_STYLE=Automatic \
-                     -allowProvisioningUpdates clean archive || exit 1
+                     -allowProvisioningUpdates \
+                     clean archive || exit 1
           cd ../..
           echo "✅ Archive complete"
 
